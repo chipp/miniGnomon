@@ -6,7 +6,6 @@
 //import Nimble
 //import RxSwift
 //import RxBlocking
-//import SwiftyJSON
 //
 //@testable import miniGnomon
 //

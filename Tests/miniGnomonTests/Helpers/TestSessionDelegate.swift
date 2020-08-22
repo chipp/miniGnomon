@@ -23,7 +23,7 @@ class TestSessionDelegate: NSObject, SessionDelegateProtocol {
     }
     
     static func jsonResponse(result: Any, statusCode: Int = 200, cached: Bool,
-                             delay: TimeInterval = 0) throws -> TestSessionDelegate {
+                             delay: DispatchTimeInterval = .seconds(0)) throws -> TestSessionDelegate {
         let data = try JSONSerialization.data(withJSONObject: result)
         var response = self.response(statusCode: statusCode)
         
@@ -36,7 +36,9 @@ class TestSessionDelegate: NSObject, SessionDelegateProtocol {
     }
     
     static func stringResponse(result: String, statusCode: Int = 200, cached: Bool) throws -> TestSessionDelegate {
-        guard let data = result.data(using: .utf8) else { throw "can't create utf8 data from string \"\(result)\"" }
+        guard let data = result.data(using: .utf8) else {
+            fatalError("can't create utf8 data from string \"\(result)\"")
+        }
         var response = self.response(statusCode: statusCode)
         
         if cached {

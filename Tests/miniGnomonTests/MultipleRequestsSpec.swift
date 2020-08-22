@@ -83,8 +83,8 @@ class MultipleRequestsSpec: XCTestCase {
                 
                 switch results[0] {
                 case .success: fail("request should fail")
-                case let .failure(HTTPClient.Error.unableToParseModel(message as String)):
-                    expect(message) == "<key> value is invalid = <null>"
+                case let .failure(DecodingError.keyNotFound(key, _)):
+                    expect(key.stringValue) == "key"
                 case let .failure(error): fail("\(error)")
                 }
                 
@@ -187,9 +187,10 @@ class MultipleRequestsSpec: XCTestCase {
         do {
             let requests = try [0, 1, 2].map { value -> Request<TestModel1> in
                 let request = try Request<TestModel1>(URLString: "https://example.com")
-                request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123 + 111 * value],
-                                                                                   cached: false,
-                                                                                   delay: 0.4 - Double(value) * 0.1)
+                request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(
+                    result: ["key": 123 + 111 * value], cached: false,
+                    delay: .milliseconds(40 + value * 10)
+                )
                 return request
             }
             
@@ -233,13 +234,16 @@ class MultipleRequestsSpec: XCTestCase {
             let requests = try [0, 1, 2].map { value -> Request<TestModel1> in
                 let request = try Request<TestModel1>(URLString: "https://example.com")
                 if value == 1 {
-                    request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["invalid": "key"],
-                                                                                       statusCode: 404, cached: false,
-                                                                                       delay: 0.4 - Double(value) * 0.1)
+                    request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(
+                        result: ["invalid": "key"],
+                        statusCode: 404, cached: false,
+                        delay: .milliseconds(40 + value * 10)
+                    )
                 } else {
-                    request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123 + 111 * value],
-                                                                                       cached: false,
-                                                                                       delay: 0.4 - Double(value) * 0.1)
+                    request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(
+                        result: ["key": 123 + 111 * value], cached: false,
+                        delay: .milliseconds(40 + value * 10)
+                    )
                 }
                 return request
             }
