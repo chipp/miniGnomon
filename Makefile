@@ -1,6 +1,6 @@
 project:
 	@swift package generate-xcodeproj
-	@ruby fix_quick_objc_runtime.rb
+	@swift run --package-path=fix_project fix_project miniGnomon.xcodeproj
 
 test:
 	@swift test --enable-test-discovery -Xswiftc -DTEST
