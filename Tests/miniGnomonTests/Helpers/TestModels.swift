@@ -171,21 +171,6 @@ struct DataModel: JSONModel {
     
 }
 
-struct TestXMLModel: XMLModel {
-    
-    let key: Int
-    
-    init(_ xml: AEXMLElement) throws {
-        guard let key = xml.attributes["key"].flatMap({ Int($0) }) else {
-            let value = String(describing: xml.attributes["key"])
-            throw HTTPClient.Error.unableToParseModel("<key> value is invalid = <\(value)>")
-        }
-        
-        self.key = key
-    }
-    
-}
-
 struct AuthorizationHeaderModel: JSONModel {
     
     let authorization: String
