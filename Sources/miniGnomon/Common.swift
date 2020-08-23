@@ -141,10 +141,6 @@ private func prepare(value: Any, with key: String?) -> [URLQueryItem] {
     }
 }
 
-public enum MultipartEncoderError {
-
-}
-
 func prepareMultipartData(
     with form: [String: String], _ files: [String: MultipartFile]
 ) throws -> (data: Data, contentType: String) {
@@ -197,30 +193,18 @@ func processedResult<U>(from data: Data, for request: Request<U>) throws -> U {
     return try U(container)
 }
 
-public typealias Interceptor = (URLRequest) -> URLRequest
-public typealias AsyncInterceptor = (URLRequest) -> Observable<URLRequest>
-
-public func + (left: @escaping (URLRequest) -> URLRequest,
-               right: @escaping (URLRequest) -> URLRequest) -> (URLRequest) -> URLRequest {
-    return { input in
-        return right(left(input))
-    }
-}
-
 extension Result {
-
     var value: Success? {
         switch self {
         case let .success(value): return value
         case .failure: return nil
         }
     }
-
 }
 
 extension ObservableType {
     func asResult() -> Observable<Result<Element, Error>> {
-        return materialize().map { event -> Event<Result<Element, Error>> in
+        materialize().map { event -> Event<Result<Element, Error>> in
             switch event {
             case let .next(element): return .next(.success(element))
             case let .error(error): return .next(.failure(error))

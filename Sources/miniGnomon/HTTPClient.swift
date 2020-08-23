@@ -20,12 +20,14 @@ public enum HTTPClient {
 
     private static func cachedModels<U>(for request: Request<U>, catchErrors: Bool) -> Observable<Response<U>> {
         let result = observable(for: request, localCache: true).flatMap { data, response in
-            return try parse(data: data, response: response, responseType: .localCache, for: request)
+            try parse(data: data, response: response, responseType: .localCache, for: request)
                 .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
         }
 
         if catchErrors {
-            return result.catchError { _ in return Observable<Response<U>>.empty() }
+            return result.catchError { _ in
+                Observable<Response<U>>.empty()
+            }
         } else {
             return result
         }
@@ -62,9 +64,10 @@ public enum HTTPClient {
         }.concat(Observable.zip(http))
     }
 
-    private static func observable<U>(for request: Request<U>,
-                                      localCache: Bool) -> Observable<(Data, HTTPURLResponse)> {
-        return Observable.deferred {
+    private static func observable<U>(
+        for request: Request<U>, localCache: Bool
+    ) -> Observable<(Data, HTTPURLResponse)> {
+        Observable.deferred {
             #if TEST
             let delegate = localCache ? request.cacheSessionDelegate : request.httpSessionDelegate
             #else
@@ -74,7 +77,7 @@ public enum HTTPClient {
             let result = delegate.result.take(1).map { tuple -> (Data, HTTPURLResponse) in
                 let (data, response) = tuple
 
-                guard (200 ..< 400) ~= response.statusCode else {
+                guard (200..<400) ~= response.statusCode else {
                     throw HTTPClient.Error.errorStatusCode(response.statusCode, data)
                 }
 
@@ -91,7 +94,9 @@ public enum HTTPClient {
 //            curlLog(request, urlRequest)
 
             #if TEST
-            guard request.shouldRunTask else { return result }
+            guard request.shouldRunTask else {
+                return result
+            }
             #endif
 
             let task = session.dataTask(with: urlRequest)
@@ -111,12 +116,13 @@ public enum HTTPClient {
     private static func parse<U>(
         data: Data, response httpResponse: HTTPURLResponse, responseType: ResponseType, for request: Request<U>
     ) throws -> Observable<Response<U>> {
-        return Observable.create { subscriber -> Disposable in
+        Observable.create { subscriber -> Disposable in
             let result: U
             do {
                 let container = try U.dataContainer(with: data, at: request.xpath)
                 result = try U(container)
-            } catch {
+            }
+            catch {
                 subscriber.onError(error)
                 return Disposables.create()
             }
@@ -124,12 +130,13 @@ public enum HTTPClient {
             let headers: [String: String]
             if let responseHeaders = httpResponse.allHeaderFields as? [String: String] {
                 headers = responseHeaders
-            } else {
+            }
+            else {
                 headers = [:]
             }
 
             let response = Response(result: result, type: responseType, headers: headers,
-                                    statusCode: httpResponse.statusCode)
+                statusCode: httpResponse.statusCode)
             request.response?(response)
             subscriber.onNext(response)
             subscriber.onCompleted()
