@@ -100,14 +100,6 @@ public class Request<M: Model> {
     public var dispatchQoS: DispatchQoS = .userInitiated
 
     public typealias IntermediateRequest = Request<M>
-
-    #if TEST
-    // swiftlint:disable weak_delegate
-    lazy var cacheSessionDelegate: SessionDelegateProtocol = SessionDelegate()
-    lazy var httpSessionDelegate: SessionDelegateProtocol = SessionDelegate()
-    // swiftlint:enable weak_delegate
-    var shouldRunTask = false
-    #endif
 }
 
 public extension Request {

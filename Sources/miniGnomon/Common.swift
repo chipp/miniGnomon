@@ -188,11 +188,6 @@ func prepareMultipartData(
     return (data, "multipart/form-data; boundary=\(boundary)")
 }
 
-func processedResult<U>(from data: Data, for request: Request<U>) throws -> U {
-    let container = try U.dataContainer(with: data, at: request.xpath)
-    return try U(container)
-}
-
 extension Result {
     var value: Success? {
         switch self {

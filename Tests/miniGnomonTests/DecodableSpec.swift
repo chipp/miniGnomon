@@ -7,50 +7,11 @@ import Nimble
 
 @testable import miniGnomon
 
-struct PlayerModel: DecodableModel, Equatable {
-    
-    let firstName: String
-    let lastName: String
-    
-    enum CodingKeys: String, CodingKey {
-        case firstName = "first_name"
-        case lastName = "last_name"
-    }
-    
-    static func ==(lhs: PlayerModel, rhs: PlayerModel) -> Bool {
-        return lhs.firstName == rhs.firstName && lhs.lastName == rhs.lastName
-    }
-    
-}
-
-struct TeamModel: DecodableModel {
-    
-    let name: String
-    let players: [PlayerModel]
-    
-}
-
-struct MatchModel: DecodableModel {
-    
-    static let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .secondsSince1970
-        return decoder
-    }()
-    
-    let homeTeam: TeamModel
-    let awayTeam: TeamModel
-    
-    let date: Date
-    
-}
-
 class DecodableSpec: XCTestCase {
     
-    func testTeam() {
-        do {
-            let request = try Request<TeamModel>(URLString: "https://example.com/")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: [
+    func testTeam() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: [
                 "name": "France",
                 "players": [
                     [
@@ -61,33 +22,26 @@ class DecodableSpec: XCTestCase {
                     ]
                 ]
             ], cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let team = responses[0].result
-                expect(team.name) == "France"
-                expect(team.players[0].firstName) == "Vasya"
-                expect(team.players[0].lastName) == "Pupkin"
-                
-                expect(team.players[1].firstName) == "Petya"
-                expect(team.players[1].lastName) == "Ronaldo"
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<TeamModel>(URLString: "https://example.com/")
+        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+
+        let team = responses[0].result
+        expect(team.name) == "France"
+        expect(team.players[0].firstName) == "Vasya"
+        expect(team.players[0].lastName) == "Pupkin"
+
+        expect(team.players[1].firstName) == "Petya"
+        expect(team.players[1].lastName) == "Ronaldo"
     }
     
-    func testPlayers() {
-        do {
-            let request = try Request<[PlayerModel]>(URLString: "https://example.com")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: [
+    func testPlayers() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: [
                 [
                     "first_name": "Vasya", "last_name": "Pupkin"
                 ],
@@ -95,32 +49,25 @@ class DecodableSpec: XCTestCase {
                     "first_name": "Petya", "last_name": "Ronaldo"
                 ]
             ], cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let players = responses[0].result
-                
-                expect(players).to(haveCount(2))
-                
-                expect(players[0]) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
-                expect(players[1]) == PlayerModel(firstName: "Petya", lastName: "Ronaldo")
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<[PlayerModel]>(URLString: "https://example.com")
+        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+
+        let players = responses[0].result
+
+        expect(players).to(haveCount(2))
+
+        expect(players[0]) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
+        expect(players[1]) == PlayerModel(firstName: "Petya", lastName: "Ronaldo")
     }
     
-    func testOptionalPlayers() {
-        do {
-            let request = try Request<[PlayerModel?]>(URLString: "https://example.com")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: [
+    func testOptionalPlayers() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: [
                 [
                     "first_name": "Vasya", "last_name": "Pupkin"
                 ],
@@ -128,32 +75,25 @@ class DecodableSpec: XCTestCase {
                     "first_name": "", "lastname": ""
                 ]
             ], cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let players = responses[0].result
-                
-                expect(players).to(haveCount(2))
-                
-                expect(players[0]) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
-                expect(players[1]).to(beNil())
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<[PlayerModel?]>(URLString: "https://example.com")
+        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+
+        let players = responses[0].result
+
+        expect(players).to(haveCount(2))
+
+        expect(players[0]) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
+        expect(players[1]).to(beNil())
     }
     
-    func testMatchWithCustomizedDecoder() {
-        do {
-            let request = try Request<MatchModel>(URLString: "https://example.com")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: [
+    func testMatchWithCustomizedDecoder() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: [
                 "homeTeam": [
                     "name": "France", "players": []
                 ],
@@ -162,39 +102,33 @@ class DecodableSpec: XCTestCase {
                 ],
                 "date": 1507654800
             ], cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let match = responses[0].result
-                
-                expect(match.homeTeam.name) == "France"
-                expect(match.awayTeam.name) == "Belarus"
-                var components = DateComponents()
-                
-                components.year = 2017
-                components.month = 10
-                components.day = 10
-                components.hour = 19
-                components.minute = 0
-                components.timeZone = TimeZone(identifier: "Europe/Paris")
-                expect(match.date) == Calendar.current.date(from: components)
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<MatchModel>(URLString: "https://example.com")
+        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+
+        let match = responses[0].result
+
+        expect(match.homeTeam.name) == "France"
+        expect(match.awayTeam.name) == "Belarus"
+
+        var components = DateComponents()
+        components.year = 2017
+        components.month = 10
+        components.day = 10
+        components.hour = 19
+        components.minute = 0
+        components.timeZone = TimeZone(identifier: "Europe/Paris")
+
+        expect(match.date) == Calendar.current.date(from: components)
     }
-    
-    func testMatchesWithCustomizedDecoder() {
-        do {
-            let request = try Request<[MatchModel]>(URLString: "https://example.com")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: [
+
+    func testMatchesWithCustomizedDecoder() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: [
                 [
                     "homeTeam": [
                         "name": "France", "players": []
@@ -205,62 +139,50 @@ class DecodableSpec: XCTestCase {
                     "date": 1507654800
                 ]
             ], cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                expect(responses[0].result).to(haveCount(1))
-                
-                let match = responses[0].result[0]
-                
-                expect(match.homeTeam.name) == "France"
-                expect(match.awayTeam.name) == "Belarus"
-                var components = DateComponents()
-                
-                components.year = 2017
-                components.month = 10
-                components.day = 10
-                components.hour = 19
-                components.minute = 0
-                components.timeZone = TimeZone(identifier: "Europe/Paris")
-                expect(match.date) == Calendar.current.date(from: components)
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<[MatchModel]>(URLString: "https://example.com")
+        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+        expect(responses[0].result).to(haveCount(1))
+
+        let match = responses[0].result[0]
+
+        expect(match.homeTeam.name) == "France"
+        expect(match.awayTeam.name) == "Belarus"
+
+        var components = DateComponents()
+        components.year = 2017
+        components.month = 10
+        components.day = 10
+        components.hour = 19
+        components.minute = 0
+        components.timeZone = TimeZone(identifier: "Europe/Paris")
+
+        expect(match.date) == Calendar.current.date(from: components)
     }
-    
-    func testXPath() {
-        do {
-            let request = try Request<PlayerModel>(URLString: "https://example.com/").setXPath("json/data")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: [
+
+    func testXPath() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: [
                 "json": ["data": ["first_name": "Vasya", "last_name": "Pupkin"]]
             ], cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let player = responses[0].result
-                expect(player.firstName) == "Vasya"
-                expect(player.lastName) == "Pupkin"
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<PlayerModel>(URLString: "https://example.com/").setXPath("json/data")
+        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+
+        let player = responses[0].result
+        expect(player.firstName) == "Vasya"
+        expect(player.lastName) == "Pupkin"
     }
-    
-    func testXPathWithArrayIndex() {
+
+    func testXPathWithArrayIndex() throws {
         let data = [
             "teams": [
                 [
@@ -271,53 +193,39 @@ class DecodableSpec: XCTestCase {
                 ]
             ]
         ]
-        
+
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: data, cached: false)
+        }
+
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("teams[0]/players[0]")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: data, cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let player = responses[0].result
-                expect(player.firstName) == "Vasya"
-                expect(player.lastName) == "Pupkin"
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
+            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+            let responses = try result.elements()
+            expect(responses).to(haveCount(1))
+
+            let player = responses[0].result
+            expect(player.firstName) == "Vasya"
+            expect(player.lastName) == "Pupkin"
         }
-        
+
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("teams[0]/players[1]")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: data, cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                let player = responses[0].result
-                expect(player.firstName) == "Petya"
-                expect(player.lastName) == "Ronaldo"
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
+            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+            let responses = try result.elements()
+            expect(responses).to(haveCount(1))
+
+            let player = responses[0].result
+            expect(player.firstName) == "Petya"
+            expect(player.lastName) == "Ronaldo"
         }
     }
-    
-    func testXPathWithMultipleArrayIndices() {
+
+    func testXPathWithMultipleArrayIndices() throws {
         let data = [
             "matches": [
                 [
@@ -333,43 +241,30 @@ class DecodableSpec: XCTestCase {
                 ]
             ]
         ]
+
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: data, cached: false)
+        }
+
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("matches[0]/lineups[0][0]")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: data, cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                expect(responses[0].result) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
+            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+            let responses = try result.elements()
+            expect(responses).to(haveCount(1))
+            expect(responses[0].result) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
         }
-        
+
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("matches[0]/lineups[1][1]")
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: data, cached: false)
-            
-            let result = HTTPClient.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                expect(responses[0].result) == PlayerModel(firstName: "Artem", lastName: "Dzyuba")
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
+            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+
+            let responses = try result.elements()
+            expect(responses).to(haveCount(1))
+            expect(responses[0].result) == PlayerModel(firstName: "Artem", lastName: "Dzyuba")
         }
     }
-    
+
 }

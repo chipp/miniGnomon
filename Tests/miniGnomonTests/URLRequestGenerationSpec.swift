@@ -9,54 +9,42 @@ import Nimble
 
 class URLRequestGenerationSpec: XCTestCase {
     
-    func testValidURL() {
-        do {
-            let request = try Request<String>(URLString: "https://example.com")
-            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-            
-            expect(urlRequest.url) == URL(string: "https://example.com")!
-        } catch {
-            fail("\(error)")
-        }
+    func testValidURL() throws {
+        let request = try Request<String>(URLString: "https://example.com")
+        let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+        expect(urlRequest.url) == URL(string: "https://example.com")!
     }
     
-    func testInvalidURL() {
+    func testInvalidURL() throws {
         do {
             _ = try Request<String>(URLString: "ß")
             fail("should fail")
         } catch let error as InvalidURLStringError {
             expect(error.URLString) == "ß"
-        } catch {
-            fail("\(error)")
         }
     }
     
-    func testMethods() {
+    func testMethods() throws {
         do {
             let request = try Request<String>(URLString: "https://example.com").setMethod(.GET)
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-            
+
             expect(urlRequest.httpMethod) == "GET"
-        } catch {
-            fail("\(error)")
         }
-        
+
         do {
             let request = try Request<String>(URLString: "https://example.com").setMethod(.HEAD)
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-            
+
             expect(urlRequest.httpMethod) == "HEAD"
-        } catch {
-            fail("\(error)")
         }
         
         do {
             let request = try Request<String>(URLString: "https://example.com").setMethod(.POST)
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-            
+
             expect(urlRequest.httpMethod) == "POST"
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -64,8 +52,6 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpMethod) == "PUT"
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -73,8 +59,6 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpMethod) == "PATCH"
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -82,8 +66,6 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpMethod) == "DELETE"
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -91,8 +73,6 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpMethod) == "KEK"
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -100,82 +80,62 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpMethod) == "KEK"
-        } catch {
-            fail("\(error)")
         }
     }
     
-    func testHeaders() {
-        do {
-            let request = try Request<String>(URLString: "https://example.com").setHeaders(["MySuperTestHeader": "kek"])
-            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-            
-            expect(urlRequest.allHTTPHeaderFields) == ["MySuperTestHeader": "kek"]
-        } catch {
-            fail("\(error)")
-        }
+    func testHeaders() throws {
+        let request = try Request<String>(URLString: "https://example.com").setHeaders(["MySuperTestHeader": "kek"])
+        let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+        expect(urlRequest.allHTTPHeaderFields) == ["MySuperTestHeader": "kek"]
     }
     
-    func testDisableLocalCache() {
+    func testDisableLocalCache() throws {
         do {
             let request = try Request<String>(URLString: "https://example.com")
             let policy = cachePolicy(for: request, localCache: true)
             expect(policy) == .returnCacheDataDontLoad
-        } catch {
-            fail("\(error)")
         }
-        
+
         do {
             let request = try Request<String>(URLString: "https://example.com").setDisableHttpCache(true)
             let policy = cachePolicy(for: request, localCache: true)
             expect(policy) == .returnCacheDataDontLoad
-        } catch {
-            fail("\(error)")
         }
     }
     
-    func testDisableHttpCache() {
+    func testDisableHttpCache() throws {
         do {
             let request = try Request<String>(URLString: "https://example.com")
             let policy = cachePolicy(for: request, localCache: false)
             expect(policy) == .useProtocolCachePolicy
-        } catch {
-            fail("\(error)")
         }
         
         do {
             let request = try Request<String>(URLString: "https://example.com").setDisableLocalCache(true)
             let policy = cachePolicy(for: request, localCache: false)
             expect(policy) == .useProtocolCachePolicy
-        } catch {
-            fail("\(error)")
         }
         
         do {
             let request = try Request<String>(URLString: "https://example.com").setDisableHttpCache(true)
             let policy = cachePolicy(for: request, localCache: false)
             expect(policy) == .reloadIgnoringLocalCacheData
-        } catch {
-            fail("\(error)")
         }
         
         do {
             let request = try Request<String>(URLString: "https://example.com").setDisableCache(true)
             let policy = cachePolicy(for: request, localCache: false)
             expect(policy) == .reloadIgnoringLocalCacheData
-        } catch {
-            fail("\(error)")
         }
     }
     
-    func testShouldHandleCookies() {
+    func testShouldHandleCookies() throws {
         do {
             let request = try Request<String>(URLString: "https://example.com")
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpShouldHandleCookies).to(beFalsy())
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -183,8 +143,6 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpShouldHandleCookies).to(beFalsy())
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -192,19 +150,15 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.httpShouldHandleCookies).to(beTruthy())
-        } catch {
-            fail("\(error)")
         }
     }
     
-    func testTimeout() {
+    func testTimeout() throws {
         do {
             let request = try Request<String>(URLString: "https://example.com")
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.timeoutInterval) == 60
-        } catch {
-            fail("\(error)")
         }
         
         do {
@@ -212,8 +166,6 @@ class URLRequestGenerationSpec: XCTestCase {
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
             
             expect(urlRequest.timeoutInterval) == 5
-        } catch {
-            fail("\(error)")
         }
     }
     

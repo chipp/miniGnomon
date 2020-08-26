@@ -15,53 +15,41 @@ class ParamsSpec: XCTestCase {
     let nonBodyMethods = [Method.GET, .HEAD, .custom("KEK", hasBody: false)]
     let bodyMethods = [Method.POST, .PUT, .PATCH, .DELETE, .custom("KEK", hasBody: true)]
     
-    func testQueryParams() {
+    func testQueryParams() throws {
         for method in methods {
-            do {
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.query(["key1": "value1", "key2": ["1", "2"]]))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.url) == URL(string: "https://example.com?key1=value1&key2%5B%5D=1&key2%5B%5D=2")!
-            } catch {
-                fail("\(error)")
-            }
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.query(["key1": "value1", "key2": ["1", "2"]]))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+            expect(urlRequest.url) == URL(string: "https://example.com?key1=value1&key2%5B%5D=1&key2%5B%5D=2")!
         }
     }
     
-    func testURLEncodedParams() {
+    func testURLEncodedParams() throws {
         for method in bodyMethods {
-            do {
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.urlEncoded(["key1": "value1", "key2": ["1", "2"]]))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.httpBody) == "key1=value1&key2%5B%5D=1&key2%5B%5D=2".data(using: .utf8)!
-                expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/x-www-form-urlencoded"
-            } catch {
-                fail("\(error)")
-            }
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.urlEncoded(["key1": "value1", "key2": ["1", "2"]]))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+            expect(urlRequest.httpBody) == "key1=value1&key2%5B%5D=1&key2%5B%5D=2".data(using: .utf8)!
+            expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/x-www-form-urlencoded"
         }
     }
     
-    func testJSONParams() {
+    func testJSONParams() throws {
         for method in bodyMethods {
-            do {
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.json(["key1": "value1", "key2": ["1", "2"]]))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.httpBody).notTo(beNil())
-                let json = urlRequest.httpBody.map({ try! JSONSerialization.jsonObject(with: $0) }) as! [String: Any]
-                
-                expect(json).to(haveCount(2))
-                expect(json["key1"] as? String) == "value1"
-                expect(json["key2"] as? [String]) == ["1", "2"]
-                
-                expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/json"
-            } catch {
-                fail("\(error)")
-            }
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.json(["key1": "value1", "key2": ["1", "2"]]))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+            expect(urlRequest.httpBody).notTo(beNil())
+            let json = urlRequest.httpBody.map({ try! JSONSerialization.jsonObject(with: $0) }) as! [String: Any]
+
+            expect(json).to(haveCount(2))
+            expect(json["key1"] as? String) == "value1"
+            expect(json["key2"] as? [String]) == ["1", "2"]
+
+            expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/json"
         }
     }
     
@@ -73,20 +61,16 @@ class ParamsSpec: XCTestCase {
             ), encoding: .utf8)!
         
         for method in bodyMethods {
-            do {
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.multipart(form, [:]))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.httpBody).notTo(beNil())
-                
-                let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
-                expect(sent) == expected
-                
-                expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
-            } catch {
-                fail("\(error)")
-            }
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.multipart(form, [:]))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+            expect(urlRequest.httpBody).notTo(beNil())
+
+            let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
+            expect(sent) == expected
+
+            expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
         }
     }
     
@@ -103,22 +87,18 @@ class ParamsSpec: XCTestCase {
             ), encoding: .utf8)!
         
         for method in bodyMethods {
-            do {
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.multipart([:], ["upload": file]))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.httpBody).notTo(beNil())
-                
-                let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.multipart([:], ["upload": file]))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
 
-                
-                expect(sent) == expected
-                
-                expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
-            } catch {
-                fail("\(error)")
-            }
+            expect(urlRequest.httpBody).notTo(beNil())
+
+            let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
+
+
+            expect(sent) == expected
+
+            expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
         }
     }
     
@@ -136,43 +116,34 @@ class ParamsSpec: XCTestCase {
             ), encoding: .utf8)!
         
         for method in bodyMethods {
-            do {
-                
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.multipart(form, ["upload": file]))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.httpBody).notTo(beNil())
-                
-                let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.multipart(form, ["upload": file]))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
 
-                expect(sent) == expected
-                
-                expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
-            } catch {
-                fail("\(error)")
-            }
+            expect(urlRequest.httpBody).notTo(beNil())
+
+            let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
+
+            expect(sent) == expected
+
+            expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
         }
     }
     
-    func testCustomDataParams() {
+    func testCustomDataParams() throws {
         let data = "custom data".data(using: .utf8)!
         
         for method in bodyMethods {
-            do {
-                let request = try Request<String>(URLString: "https://example.com").setMethod(method)
-                    .setParams(.data(data, contentType: "application/octet-stream"))
-                let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
-                
-                expect(urlRequest.httpBody).notTo(beNil())
-                
-                let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
-                expect(sent) == "custom data"
-                
-                expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/octet-stream"
-            } catch {
-                fail("\(error)")
-            }
+            let request = try Request<String>(URLString: "https://example.com").setMethod(method)
+                .setParams(.data(data, contentType: "application/octet-stream"))
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: .useProtocolCachePolicy)
+
+            expect(urlRequest.httpBody).notTo(beNil())
+
+            let sent = String(data: urlRequest.httpBody!, encoding: .utf8)!
+            expect(sent) == "custom data"
+
+            expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/octet-stream"
         }
     }
     

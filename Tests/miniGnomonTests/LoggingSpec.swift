@@ -26,8 +26,8 @@
 //        }
 //
 //        do {
-//            let request = try Request<TestModel1>(URLString: "https://example.com/")
-//            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123], cached: false)
+//            let request = try Request<TestModel>(URLString: "https://example.com/")
+//            request.httpSessionDelegate = try TestResponses.jsonResponse(result: ["key": 123], cached: false)
 //
 //            if let loggingPolicy = loggingPolicy {
 //                request.loggingPolicy = loggingPolicy

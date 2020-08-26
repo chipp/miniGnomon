@@ -11,79 +11,63 @@ import RxBlocking
 
 class CacheAndFetchSpec: XCTestCase {
     
-    func testNoCachedValue() {
-        do {
-            let request = try Request<TestModel1>(URLString: "https://example.com/")
-            request.cacheSessionDelegate = TestSessionDelegate.noCacheResponse()
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123], cached: false)
-            
-            let result = HTTPClient.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(1))
-                
-                expect(responses[0].result.key) == 123
-                expect(responses[0].type) == .regular
-            case let .failed(_, error):
-                fail("\(error)")
+    func testNoCachedValue() throws {
+        let client = HTTPClient { _, policy, _ in
+            if case .returnCacheDataDontLoad = policy {
+                return TestResponses.noCacheResponse()
+            } else {
+                return try! TestResponses.jsonResponse(result: ["key": 123], cached: false)
             }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<TestModel>(URLString: "https://example.com/")
+        let result = client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(1))
+
+        expect(responses[0].result.key) == 123
+        expect(responses[0].type) == .regular
     }
     
-    func testCachedValueStored() {
-        do {
-            let request = try Request<TestModel1>(URLString: "https://example.com/")
-            request.cacheSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123], cached: true)
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123], cached: true)
-            
-            let result = HTTPClient.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(2))
-                
-                expect(responses[0].result.key) == 123
-                expect(responses[0].type) == .localCache
-                
-                expect(responses[1].result.key) == 123
-                expect(responses[1].type) == .httpCache
-            case let .failed(_, error):
-                fail("\(error)")
-            }
-        } catch {
-            fail("\(error)")
-            return
+    func testCachedValueStored() throws {
+        let client = HTTPClient { _, _, _ in
+            try! TestResponses.jsonResponse(result: ["key": 123], cached: true)
         }
+
+        let request = try Request<TestModel>(URLString: "https://example.com/")
+        let result = client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(2))
+
+        expect(responses[0].result.key) == 123
+        expect(responses[0].type) == .localCache
+
+        expect(responses[1].result.key) == 123
+        expect(responses[1].type) == .httpCache
     }
     
-    func testOutdatedCachedValueStored() {
-        do {
-            let request = try Request<TestModel1>(URLString: "https://example.com/")
-            request.cacheSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123], cached: true)
-            request.httpSessionDelegate = try TestSessionDelegate.jsonResponse(result: ["key": 123], cached: false)
-            
-            let result = HTTPClient.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
-            
-            switch result {
-            case let .completed(responses):
-                expect(responses).to(haveCount(2))
-                
-                expect(responses[0].result.key) == 123
-                expect(responses[0].type) == .localCache
-                
-                expect(responses[1].result.key) == 123
-                expect(responses[1].type) == .regular
-            case let .failed(_, error):
-                fail("\(error)")
+    func testOutdatedCachedValueStored() throws {
+        let client = HTTPClient { _, policy, _ in
+            if case .returnCacheDataDontLoad = policy {
+                return try! TestResponses.jsonResponse(result: ["key": 123], cached: true)
+            } else {
+                return try! TestResponses.jsonResponse(result: ["key": 123], cached: false)
             }
-        } catch {
-            fail("\(error)")
-            return
         }
+
+        let request = try Request<TestModel>(URLString: "https://example.com/")
+        let result = client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
+
+        let responses = try result.elements()
+        expect(responses).to(haveCount(2))
+
+        expect(responses[0].result.key) == 123
+        expect(responses[0].type) == .localCache
+
+        expect(responses[1].result.key) == 123
+        expect(responses[1].type) == .regular
     }
     
 }

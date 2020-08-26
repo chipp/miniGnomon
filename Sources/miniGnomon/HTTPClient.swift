@@ -5,39 +5,72 @@
 import Foundation
 import RxSwift
 
-public enum HTTPClient {
-    public static func models<U>(for request: Request<U>) -> Observable<Response<U>> {
-        observable(for: request, localCache: false).flatMap { data, response -> Observable<Response<U>> in
+public class HTTPClient {
+    typealias PerformURLRequest = (
+        URLRequest, URLRequest.CachePolicy, AuthenticationChallenge?
+    ) -> Observable<(Data, HTTPURLResponse)>
+
+    let performURLRequest: PerformURLRequest
+
+    public init() {
+        self.performURLRequest = HTTPClient.performURLRequest
+    }
+
+    init(performURLRequest: @escaping PerformURLRequest) {
+        self.performURLRequest = performURLRequest
+    }
+
+    private static func performURLRequest(
+        urlRequest: URLRequest, policy: URLRequest.CachePolicy,
+        authenticationChallenge: AuthenticationChallenge?
+    ) -> Observable<(Data, HTTPURLResponse)> {
+        let delegate = SessionDelegate()
+        delegate.authenticationChallenge = authenticationChallenge
+
+        let session = URLSession(configuration: configuration(with: policy), delegate: delegate, delegateQueue: nil)
+        let task = session.dataTask(with: urlRequest)
+        task.resume()
+        session.finishTasksAndInvalidate()
+
+        return delegate.result.do(onDispose: {
+            if task.state == .running {
+                task.cancel()
+            }
+        })
+    }
+
+    public func models<M>(for request: Request<M>) -> Observable<Response<M>> {
+        observable(for: request, localCache: false).flatMap { data, response -> Observable<Response<M>> in
             let type: ResponseType = response.resultFromHTTPCache && !request.disableHttpCache ? .httpCache : .regular
-            return try parse(data: data, response: response, responseType: type, for: request)
+            return try self.parse(data: data, response: response, responseType: type, for: request)
                 .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
         }
     }
 
-    public static func cachedModels<U>(for request: Request<U>) -> Observable<Response<U>> {
+    public func cachedModels<M>(for request: Request<M>) -> Observable<Response<M>> {
         cachedModels(for: request, catchErrors: true)
     }
 
-    private static func cachedModels<U>(for request: Request<U>, catchErrors: Bool) -> Observable<Response<U>> {
+    private func cachedModels<M>(for request: Request<M>, catchErrors: Bool) -> Observable<Response<M>> {
         let result = observable(for: request, localCache: true).flatMap { data, response in
-            try parse(data: data, response: response, responseType: .localCache, for: request)
+            try self.parse(data: data, response: response, responseType: .localCache, for: request)
                 .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
         }
 
         if catchErrors {
             return result.catchError { _ in
-                Observable<Response<U>>.empty()
+                Observable<Response<M>>.empty()
             }
         } else {
             return result
         }
     }
 
-    public static func cachedThenFetch<U>(_ request: Request<U>) -> Observable<Response<U>> {
+    public func cachedThenFetch<M>(_ request: Request<M>) -> Observable<Response<M>> {
         cachedModels(for: request).concat(models(for: request))
     }
 
-    public static func cachedModels<U>(for requests: [Request<U>]) -> Observable<[Result<Response<U>, Swift.Error>]> {
+    public func cachedModels<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Swift.Error>]> {
         guard !requests.isEmpty else { return .just([]) }
 
         return Observable.combineLatest(requests.map { request in
@@ -45,7 +78,7 @@ public enum HTTPClient {
         })
     }
 
-    public static func models<U>(for requests: [Request<U>]) -> Observable<[Result<Response<U>, Swift.Error>]> {
+    public func models<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Swift.Error>]> {
         guard !requests.isEmpty else { return .just([]) }
 
         return Observable.combineLatest(requests.map { request in
@@ -53,7 +86,7 @@ public enum HTTPClient {
         })
     }
 
-    public static func cachedThenFetch<U>(_ requests: [Request<U>]) -> Observable<[Result<Response<U>, Swift.Error>]> {
+    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> Observable<[Result<Response<M>, Swift.Error>]> {
         guard !requests.isEmpty else { return .just([]) }
 
         let cached = requests.map { cachedModels(for: $0, catchErrors: true).asResult() }
@@ -64,17 +97,16 @@ public enum HTTPClient {
         }.concat(Observable.zip(http))
     }
 
-    private static func observable<U>(
-        for request: Request<U>, localCache: Bool
+    private func observable<M>(
+        for request: Request<M>, localCache: Bool
     ) -> Observable<(Data, HTTPURLResponse)> {
         Observable.deferred {
-            #if TEST
-            let delegate = localCache ? request.cacheSessionDelegate : request.httpSessionDelegate
-            #else
-            let delegate = SessionDelegate()
-            #endif
+            let policy = cachePolicy(for: request, localCache: localCache)
+            let urlRequest = try prepareURLRequest(from: request, cachePolicy: policy)
 
-            let result = delegate.result.take(1).map { tuple -> (Data, HTTPURLResponse) in
+            let result = self.performURLRequest(urlRequest, policy, request.authenticationChallenge)
+
+            return result.take(1).map { tuple -> (Data, HTTPURLResponse) in
                 let (data, response) = tuple
 
                 guard (200..<400) ~= response.statusCode else {
@@ -82,45 +114,18 @@ public enum HTTPClient {
                 }
 
                 return tuple
-            }
-
-            delegate.authenticationChallenge = request.authenticationChallenge
-
-            let policy = cachePolicy(for: request, localCache: localCache)
-            let session = URLSession(configuration: configuration(with: policy), delegate: delegate, delegateQueue: nil)
-
-            let urlRequest = try prepareURLRequest(from: request, cachePolicy: policy)
-
-//            curlLog(request, urlRequest)
-
-            #if TEST
-            guard request.shouldRunTask else {
-                return result
-            }
-            #endif
-
-            let task = session.dataTask(with: urlRequest)
-            task.resume()
-            session.finishTasksAndInvalidate()
-
-            return result.do(onDispose: {
-                if #available(iOS 10.0, *) {
-                    if task.state == .running {
-                        task.cancel()
-                    }
-                }
-            }).share(replay: 1, scope: .whileConnected)
+            }.share(replay: 1, scope: .whileConnected)
         }
     }
 
-    private static func parse<U>(
-        data: Data, response httpResponse: HTTPURLResponse, responseType: ResponseType, for request: Request<U>
-    ) throws -> Observable<Response<U>> {
+    private func parse<M>(
+        data: Data, response httpResponse: HTTPURLResponse, responseType: ResponseType, for request: Request<M>
+    ) throws -> Observable<Response<M>> {
         Observable.create { subscriber -> Disposable in
-            let result: U
+            let result: M
             do {
-                let container = try U.dataContainer(with: data, at: request.xpath)
-                result = try U(container)
+                let container = try M.dataContainer(with: data, at: request.xpath)
+                result = try M(container)
             }
             catch {
                 subscriber.onError(error)
@@ -135,8 +140,9 @@ public enum HTTPClient {
                 headers = [:]
             }
 
-            let response = Response(result: result, type: responseType, headers: headers,
-                statusCode: httpResponse.statusCode)
+            let response = Response(
+                result: result, type: responseType, headers: headers, statusCode: httpResponse.statusCode
+            )
             request.response?(response)
             subscriber.onNext(response)
             subscriber.onCompleted()
