@@ -4,7 +4,6 @@
 
 import XCTest
 import Nimble
-import RxBlocking
 
 @testable import miniGnomon
 
@@ -32,7 +31,7 @@ class CertificateSpec: XCTestCase {
         let client = HTTPClient()
 
         let request = try Request<String>(URLString: "https://self-signed.badssl.com/")
-        let result = client.models(for: request).toBlocking().materialize()
+        let result = try client.models(for: request).toBlocking().materialize()
 
         switch result {
         case .completed: fail("request should fail")

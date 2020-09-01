@@ -3,7 +3,7 @@
 //
 
 import Foundation
-import RxSwift
+import Combine
 
 typealias DataAndResponse = (data: Data, response: HTTPURLResponse)
 
@@ -197,14 +197,10 @@ extension Result {
     }
 }
 
-extension ObservableType {
-    func asResult() -> Observable<Result<Element, Error>> {
-        materialize().map { event -> Event<Result<Element, Error>> in
-            switch event {
-            case let .next(element): return .next(.success(element))
-            case let .error(error): return .next(.failure(error))
-            case .completed: return .completed
-            }
-        }.dematerialize()
+extension Publisher {
+    func asResult() -> AnyPublisher<Result<Output, Failure>, Never> {
+        map { .success($0) }.catch { error in
+            Just(.failure(error))
+        }.eraseToAnyPublisher()
     }
 }

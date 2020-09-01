@@ -3,7 +3,7 @@
 //
 
 import Foundation
-import RxSwift
+import Combine
 
 func configuration(with policy: URLRequest.CachePolicy) -> URLSessionConfiguration {
     let configuration = URLSessionConfiguration.default
@@ -12,8 +12,8 @@ func configuration(with policy: URLRequest.CachePolicy) -> URLSessionConfigurati
 }
 
 final class SessionDelegate: NSObject, URLSessionDataDelegate {
-    fileprivate let subject = PublishSubject<DataAndResponse>()
-    var result: Observable<DataAndResponse> { return subject }
+    fileprivate let subject = PassthroughSubject<DataAndResponse, Error>()
+    var result: AnyPublisher<DataAndResponse, Error> { subject.eraseToAnyPublisher() }
 
     var authenticationChallenge: AuthenticationChallenge?
 
@@ -64,20 +64,20 @@ final class SessionDelegate: NSObject, URLSessionDataDelegate {
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
-            subject.onError(error)
+            subject.send(completion: .failure(error))
         } else {
             guard let response = response else {
-                subject.onError(HTTPClientError.undefined(message: nil))
+                subject.send(completion: .failure(HTTPClientError.undefined(message: nil)))
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                subject.onError(HTTPClientError.nonHTTPResponse(response: response))
+                subject.send(completion: .failure(HTTPClientError.nonHTTPResponse(response: response)))
                 return
             }
 
-            subject.onNext((data, httpResponse))
-            subject.onCompleted()
+            subject.send((data, httpResponse))
+            subject.send(completion: .finished)
         }
     }
 }

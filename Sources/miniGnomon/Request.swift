@@ -3,7 +3,6 @@
 //
 
 import Foundation
-import RxSwift
 
 public typealias AuthenticationChallenge = (
     URLAuthenticationChallenge, (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
@@ -97,7 +96,7 @@ public class Request<M: Model> {
 
     public var response: ((Response<M>) -> Void)?
 
-    public var dispatchQoS: DispatchQoS = .userInitiated
+    public var dispatchQoS: DispatchQoS.QoSClass = .userInitiated
 
     public typealias IntermediateRequest = Request<M>
 }
@@ -171,7 +170,7 @@ public extension Request {
 //    }
 
     @discardableResult
-    func setDispatchQoS(_ value: DispatchQoS) -> IntermediateRequest {
+    func setDispatchQoS(_ value: DispatchQoS.QoSClass) -> IntermediateRequest {
         dispatchQoS = value
         return self
     }

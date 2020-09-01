@@ -3,7 +3,7 @@
 //
 
 import Foundation
-import RxSwift
+import Combine
 @testable import miniGnomon
 
 enum TestResponses {
@@ -14,8 +14,8 @@ enum TestResponses {
     }
 
     static func jsonResponse(
-        result: Any, statusCode: Int = 200, cached: Bool, delay: DispatchTimeInterval = .seconds(0)
-    ) throws -> Observable<DataAndResponse> {
+        result: Any, statusCode: Int = 200, cached: Bool, delay: RunLoop.SchedulerTimeType.Stride? = nil
+    ) throws -> AnyPublisher<DataAndResponse, Error> {
         let data = try JSONSerialization.data(withJSONObject: result)
         var response = self.response(statusCode: statusCode)
 
@@ -23,13 +23,21 @@ enum TestResponses {
             response = response.httpCachedResponse!
         }
 
-        return Observable.just((data, response))
-            .delay(delay, scheduler: ConcurrentDispatchQueueScheduler(qos: .background))
+        if let delay = delay {
+            return Just((data, response))
+                .setFailureType(to: Error.self)
+                .delay(for: delay, scheduler: RunLoop.current)
+                .eraseToAnyPublisher()
+        } else {
+            return Just((data, response))
+                .setFailureType(to: Error.self)
+                .eraseToAnyPublisher()
+        }
     }
 
     static func stringResponse(
         result: String, statusCode: Int = 200, cached: Bool
-    ) throws -> Observable<DataAndResponse> {
+    ) throws -> AnyPublisher<DataAndResponse, Error> {
         guard let data = result.data(using: .utf8) else {
             fatalError("can't create utf8 data from string \"\(result)\"")
         }
@@ -40,10 +48,13 @@ enum TestResponses {
             response = response.httpCachedResponse!
         }
 
-        return Observable.just((data, response))
+        return Just((data, response)).setFailureType(to: Error.self).eraseToAnyPublisher()
     }
 
-    static func noCacheResponse() -> Observable<DataAndResponse> {
-        Observable.error(NSError(domain: NSURLErrorDomain, code: NSURLErrorResourceUnavailable))
+    static func noCacheResponse() -> AnyPublisher<DataAndResponse, Error> {
+        Fail(
+            outputType: DataAndResponse.self,
+            failure: NSError(domain: NSURLErrorDomain, code: NSURLErrorResourceUnavailable)
+        ).eraseToAnyPublisher()
     }
 }

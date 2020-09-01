@@ -4,8 +4,7 @@
 
 import XCTest
 import Nimble
-import RxSwift
-import RxBlocking
+import Combine
 
 @testable import miniGnomon
 
@@ -26,7 +25,7 @@ class MultipleRequestsSpec: XCTestCase {
             try Request<TestModel>(URLString: "https://example.com/\(123 + 111 * value)")
         }
 
-        let result = client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -52,7 +51,7 @@ class MultipleRequestsSpec: XCTestCase {
             try Request<TestModel>(URLString: "https://example.com/\(123 + 111 * value)")
         }
 
-        let result = client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -80,7 +79,7 @@ class MultipleRequestsSpec: XCTestCase {
             try Request<TestModel?>(URLString: "https://example.com/\(123 + 111 * value)")
         }
 
-        let result = client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -106,7 +105,7 @@ class MultipleRequestsSpec: XCTestCase {
             try Request<TestModel?>(URLString: "https://example.com/\(123 + 111 * value)")
         }
 
-        let result = client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -136,7 +135,7 @@ class MultipleRequestsSpec: XCTestCase {
             try Request<TestModel>(URLString: "https://example.com/\(value)")
         }
 
-        let result = client.models(for: requests).toBlocking(timeout: 1).materialize()
+        let result = try client.models(for: requests).toBlocking(timeout: 1).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -170,7 +169,7 @@ class MultipleRequestsSpec: XCTestCase {
             try Request<TestModel>(URLString: "https://example.com/\(value)")
         }
 
-        let result = client.models(for: requests).toBlocking(timeout: 1).materialize()
+        let result = try client.models(for: requests).toBlocking(timeout: 1).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -190,16 +189,16 @@ class MultipleRequestsSpec: XCTestCase {
     }
 
     func testMultipleEmptyArray() throws {
-        let client = HTTPClient { _, _, _ in .empty() }
+        let client = HTTPClient { _, _, _ in Empty().eraseToAnyPublisher() }
 
         let requests = [Request<TestModel>]()
         let optionalRequests = [Request<TestModel?>]()
 
-        expect(try client.cachedModels(for: optionalRequests).toBlocking(timeout: BlockingTimeout).first()).to(haveCount(0))
-        expect(try client.models(for: optionalRequests).toBlocking(timeout: BlockingTimeout).first()).to(haveCount(0))
-        expect(try client.models(for: requests).toBlocking(timeout: BlockingTimeout).first()).to(haveCount(0))
+        expect(try client.cachedModels(for: optionalRequests).toBlocking().first()).to(haveCount(0))
+        expect(try client.models(for: optionalRequests).toBlocking().first()).to(haveCount(0))
+        expect(try client.models(for: requests).toBlocking().first()).to(haveCount(0))
 
-        let cachedThenFetch = try client.cachedThenFetch(optionalRequests).toBlocking(timeout: BlockingTimeout).toArray()
+        let cachedThenFetch = try client.cachedThenFetch(optionalRequests).toBlocking().toArray()
         expect(cachedThenFetch).to(haveCount(1))
         expect(cachedThenFetch[0]).to(haveCount(0))
     }
