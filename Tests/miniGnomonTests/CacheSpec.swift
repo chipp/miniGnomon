@@ -5,6 +5,7 @@
 import XCTest
 import Nimble
 import Combine
+import BlockingSubscriber
 
 @testable import miniGnomon
 

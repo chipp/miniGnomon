@@ -5,7 +5,7 @@
 import Foundation
 import Combine
 
-extension Publisher {
+public extension Publisher {
     func toBlocking(timeout: TimeInterval? = nil) -> BlockingSubscriber<Self.Output, Self.Failure> {
         let subscriber = BlockingSubscriber<Self.Output, Self.Failure>(timeout: timeout)
         receive(subscriber: subscriber)
@@ -17,7 +17,7 @@ public enum BlockingMaterializedSequenceResult<Input, Failure: Error> {
     case completed(elements: [Input])
     case failed(elements: [Input], error: Failure)
 
-    func elements() throws -> [Input] {
+    public func elements() throws -> [Input] {
         switch self {
         case let .completed(elements):
             return elements
@@ -29,8 +29,8 @@ public enum BlockingMaterializedSequenceResult<Input, Failure: Error> {
 
 extension BlockingMaterializedSequenceResult: Equatable where Input: Equatable, Failure: Equatable {}
 
-final class BlockingSubscriber<Input, Failure: Error>: Subscriber {
-    let combineIdentifier = CombineIdentifier()
+public final class BlockingSubscriber<Input, Failure: Error>: Subscriber {
+    public let combineIdentifier = CombineIdentifier()
     let timeout: TimeInterval?
     let runLoop: CFRunLoop
 
@@ -42,12 +42,12 @@ final class BlockingSubscriber<Input, Failure: Error>: Subscriber {
     }
 
     private var subscription: Subscription?
-    func receive(subscription: Subscription) {
+    public func receive(subscription: Subscription) {
         self.subscription = subscription
     }
 
     private var inputs: [Input] = []
-    func receive(_ input: Input) -> Subscribers.Demand {
+    public func receive(_ input: Input) -> Subscribers.Demand {
         inputs.append(input)
 
         if
@@ -62,7 +62,7 @@ final class BlockingSubscriber<Input, Failure: Error>: Subscriber {
     }
 
     private var completion: Subscribers.Completion<Failure>?
-    func receive(completion: Subscribers.Completion<Failure>) {
+    public func receive(completion: Subscribers.Completion<Failure>) {
         self.completion = completion
         stop()
     }
@@ -97,15 +97,15 @@ final class BlockingSubscriber<Input, Failure: Error>: Subscriber {
         let inputs: [Input]
     }
 
-    func first() throws -> Input? {
+    public func first() throws -> Input? {
         try materializeResult(1).elements().first
     }
 
-    func toArray() throws -> [Input] {
+    public func toArray() throws -> [Input] {
         try materializeResult().elements()
     }
 
-    func materialize() throws -> BlockingMaterializedSequenceResult<Input, Failure> {
+    public func materialize() throws -> BlockingMaterializedSequenceResult<Input, Failure> {
         try materializeResult()
     }
 

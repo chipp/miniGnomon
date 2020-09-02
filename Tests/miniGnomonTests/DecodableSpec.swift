@@ -4,6 +4,7 @@
 
 import XCTest
 import Nimble
+import BlockingSubscriber
 
 @testable import miniGnomon
 

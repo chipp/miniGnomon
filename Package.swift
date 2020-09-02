@@ -18,9 +18,15 @@ let package = Package(
         .package(url: "https://github.com/Quick/Nimble", .upToNextMajor(from: "8.0.0"))
     ],
     targets: [
-        .target(name: "miniGnomon"),
+        .target(name: "miniGnomon", dependencies: ["CombineExtensions"]),
         .testTarget(name: "miniGnomonTests", dependencies: [
-            "miniGnomon", "Nimble"
-        ])
+            "miniGnomon", "Nimble", "BlockingSubscriber"
+        ]),
+
+        .target(name: "BlockingSubscriber"),
+        .target(name: "CombineExtensions"),
+        .testTarget(name: "CombineExtensionsTests", dependencies: [
+            "CombineExtensions", "Nimble"
+        ]),
     ]
 )

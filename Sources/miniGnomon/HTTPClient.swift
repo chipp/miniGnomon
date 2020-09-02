@@ -4,6 +4,7 @@
 
 import Foundation
 import Combine
+import CombineExtensions
 
 public class HTTPClient {
     // MARK: - Initialization

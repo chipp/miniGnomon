@@ -5,6 +5,7 @@
 import XCTest
 import Combine
 import Nimble
+import CombineExtensions
 @testable import miniGnomon
 
 class CombineLatestCollectionTests: XCTestCase {

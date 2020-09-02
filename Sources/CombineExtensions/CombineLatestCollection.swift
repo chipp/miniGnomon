@@ -5,24 +5,24 @@
 import Combine
 import Foundation
 
-extension Collection where Element: Publisher {
+public extension Collection where Element: Publisher {
     func combineLatest() -> CombineLatestCollection<Self> {
         CombineLatestCollection(self)
     }
 }
 
-struct CombineLatestCollection<Upstreams>: Publisher where Upstreams: Collection, Upstreams.Element: Publisher {
-    typealias Upstream = Upstreams.Element
+public struct CombineLatestCollection<Upstreams>: Publisher where Upstreams: Collection, Upstreams.Element: Publisher {
+    public typealias Upstream = Upstreams.Element
 
-    typealias Output = [Upstream.Output]
-    typealias Failure = Upstream.Failure
+    public typealias Output = [Upstream.Output]
+    public typealias Failure = Upstream.Failure
 
     let publishers: Upstreams
-    init(_ publishers: Upstreams) {
+    public init(_ publishers: Upstreams) {
         self.publishers = publishers
     }
 
-    func receive<S>(subscriber: S) where S: Subscriber, Self.Failure == S.Failure, Self.Output == S.Input {
+    public func receive<S>(subscriber: S) where S: Subscriber, Self.Failure == S.Failure, Self.Output == S.Input {
         let combiner = CombineLatestCollectionSubscription(publishers: publishers, subscriber: subscriber)
 
         for (index, publisher) in publishers.enumerated() {
