@@ -10,7 +10,6 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ReactiveX/RxSwift", .upToNextMajor(from: "5.1.1")),
-        .package(url: "https://github.com/Quick/Quick", .upToNextMajor(from: "3.0.0")),
         .package(url: "https://github.com/Quick/Nimble", .upToNextMajor(from: "8.0.0"))
     ],
     targets: [
@@ -19,9 +18,8 @@ let package = Package(
             .product(name: "RxRelay", package: "RxSwift"),
         ]),
         .testTarget(name: "miniGnomonTests", dependencies: [
-            "miniGnomon",
-            .product(name: "RxBlocking", package: "RxSwift"),
-            "Quick", "Nimble"
+            "miniGnomon", "Nimble",
+            .product(name: "RxBlocking", package: "RxSwift")
         ])
     ]
 )
