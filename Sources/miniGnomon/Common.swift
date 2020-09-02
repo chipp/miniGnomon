@@ -5,14 +5,12 @@
 import Foundation
 import RxSwift
 
-public extension HTTPClient {
-    enum Error: Swift.Error {
-        case undefined(message: String?)
-        case nonHTTPResponse(response: URLResponse)
-        case invalidResponse
-        case unableToParseModel(Swift.Error)
-        case errorStatusCode(Int, Data)
-    }
+public enum HTTPClientError: Error {
+    case undefined(message: String?)
+    case nonHTTPResponse(response: URLResponse)
+    case invalidResponse
+    case unableToParseModel(Error)
+    case errorStatusCode(Int, Data)
 }
 
 extension HTTPURLResponse {

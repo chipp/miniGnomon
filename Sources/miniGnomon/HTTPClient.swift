@@ -42,7 +42,7 @@ public class HTTPClient {
     public func models<M>(for request: Request<M>) -> Observable<Response<M>> {
         observable(for: request, localCache: false).flatMap { data, response -> Observable<Response<M>> in
             let type: ResponseType = response.resultFromHTTPCache && !request.disableHttpCache ? .httpCache : .regular
-            return try self.parse(data: data, response: response, responseType: type, for: request)
+            return self.parse(data: data, response: response, responseType: type, for: request)
                 .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
         }
     }
@@ -53,7 +53,7 @@ public class HTTPClient {
 
     private func cachedModels<M>(for request: Request<M>, catchErrors: Bool) -> Observable<Response<M>> {
         let result = observable(for: request, localCache: true).flatMap { data, response in
-            try self.parse(data: data, response: response, responseType: .localCache, for: request)
+            self.parse(data: data, response: response, responseType: .localCache, for: request)
                 .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
         }
 
@@ -70,7 +70,7 @@ public class HTTPClient {
         cachedModels(for: request).concat(models(for: request))
     }
 
-    public func cachedModels<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Swift.Error>]> {
+    public func cachedModels<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
         guard !requests.isEmpty else { return .just([]) }
 
         return Observable.combineLatest(requests.map { request in
@@ -78,7 +78,7 @@ public class HTTPClient {
         })
     }
 
-    public func models<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Swift.Error>]> {
+    public func models<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
         guard !requests.isEmpty else { return .just([]) }
 
         return Observable.combineLatest(requests.map { request in
@@ -86,7 +86,7 @@ public class HTTPClient {
         })
     }
 
-    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> Observable<[Result<Response<M>, Swift.Error>]> {
+    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
         guard !requests.isEmpty else { return .just([]) }
 
         let cached = requests.map { cachedModels(for: $0, catchErrors: true).asResult() }
@@ -106,11 +106,11 @@ public class HTTPClient {
 
             let result = self.performURLRequest(urlRequest, policy, request.authenticationChallenge)
 
-            return result.take(1).map { tuple -> (Data, HTTPURLResponse) in
+            return result.map { tuple -> (Data, HTTPURLResponse) in
                 let (data, response) = tuple
 
                 guard (200..<400) ~= response.statusCode else {
-                    throw HTTPClient.Error.errorStatusCode(response.statusCode, data)
+                    throw HTTPClientError.errorStatusCode(response.statusCode, data)
                 }
 
                 return tuple
@@ -120,7 +120,7 @@ public class HTTPClient {
 
     private func parse<M>(
         data: Data, response httpResponse: HTTPURLResponse, responseType: ResponseType, for request: Request<M>
-    ) throws -> Observable<Response<M>> {
+    ) -> Observable<Response<M>> {
         Observable.create { subscriber -> Disposable in
             let result: M
             do {

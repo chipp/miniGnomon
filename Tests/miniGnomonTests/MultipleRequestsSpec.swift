@@ -179,7 +179,7 @@ class MultipleRequestsSpec: XCTestCase {
 
         switch results[1] {
         case .success: fail("request should fail")
-        case let .failure(HTTPClient.Error.errorStatusCode(code, _)): expect(code) == 404
+        case let .failure(HTTPClientError.errorStatusCode(code, _)): expect(code) == 404
         case let .failure(error): throw error
         }
 

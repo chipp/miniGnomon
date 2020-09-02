@@ -67,16 +67,17 @@ final class SessionDelegate: NSObject, URLSessionDataDelegate {
             subject.onError(error)
         } else {
             guard let response = response else {
-                subject.onError(HTTPClient.Error.undefined(message: nil))
+                subject.onError(HTTPClientError.undefined(message: nil))
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                subject.onError(HTTPClient.Error.nonHTTPResponse(response: response))
+                subject.onError(HTTPClientError.nonHTTPResponse(response: response))
                 return
             }
 
             subject.onNext((data, httpResponse))
+            subject.onCompleted()
         }
     }
 }
