@@ -12,7 +12,7 @@ class CertificateSpec: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
     }
-    
+
     func testInvalidCertificate() throws {
         let client = HTTPClient()
 
@@ -27,7 +27,7 @@ class CertificateSpec: XCTestCase {
 
         expect(response.result.count).to(beGreaterThan(0))
     }
-    
+
     func testInvalidCertificateWithoutHandler() throws {
         let client = HTTPClient()
 
@@ -42,5 +42,5 @@ class CertificateSpec: XCTestCase {
             expect(error.code) == NSURLErrorServerCertificateUntrusted
         }
     }
-    
+
 }

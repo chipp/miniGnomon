@@ -45,7 +45,7 @@ class RequestSpec: XCTestCase {
         expect(response.statusCode) == 200
         expect(response.result?.key) == 123
     }
-    
+
     func testSingleOptionalFailedRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: ["invalid": 123], cached: false)
@@ -61,7 +61,7 @@ class RequestSpec: XCTestCase {
         expect(response.statusCode) == 200
         expect(response.result).to(beNil())
     }
-    
+
     func testArrayRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -84,7 +84,7 @@ class RequestSpec: XCTestCase {
         expect(response.result[1].key).to(equal(234))
         expect(response.result[2].key).to(equal(345))
     }
-    
+
     func testOptionalArraySuccessfulRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -107,7 +107,7 @@ class RequestSpec: XCTestCase {
         expect(response.result?[1].key).to(equal(234))
         expect(response.result?[2].key).to(equal(345))
     }
-    
+
     func testOptionalArrayFailedRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: ["invalid": "type"], cached: false)
@@ -122,7 +122,7 @@ class RequestSpec: XCTestCase {
         let response = responses[0]
         expect(response.result).to(beNil())
     }
-    
+
     func testArrayOfOptionalsSuccessfulRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -145,7 +145,7 @@ class RequestSpec: XCTestCase {
         expect(response.result[1]?.key).to(equal(234))
         expect(response.result[2]?.key).to(equal(345))
     }
-    
+
     func testArrayOfOptionalsFailedRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -168,7 +168,7 @@ class RequestSpec: XCTestCase {
         expect(response.result[1]).to(beNil())
         expect(response.result[2]?.key).to(equal(345))
     }
-    
+
     func testStringRequest() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.stringResponse(result: "test string", cached: false)
@@ -183,7 +183,7 @@ class RequestSpec: XCTestCase {
         let response = responses[0]
         expect(response.result) == "test string"
     }
-    
+
     func testErrorStatusCode() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.stringResponse(result: "error string", statusCode: 401, cached: false)
@@ -201,5 +201,5 @@ class RequestSpec: XCTestCase {
             throw error
         }
     }
-    
+
 }

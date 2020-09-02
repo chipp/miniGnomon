@@ -8,13 +8,13 @@ import Nimble
 @testable import miniGnomon
 
 class ParamsSpec: XCTestCase {
-    
+
     let methods = [Method.GET, .HEAD, .POST, .PUT, .PATCH, .DELETE, .custom("KEK", hasBody: true),
                    .custom("KEK", hasBody: false)]
-    
+
     let nonBodyMethods = [Method.GET, .HEAD, .custom("KEK", hasBody: false)]
     let bodyMethods = [Method.POST, .PUT, .PATCH, .DELETE, .custom("KEK", hasBody: true)]
-    
+
     func testQueryParams() throws {
         for method in methods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
@@ -24,7 +24,7 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.url) == URL(string: "https://example.com?key1=value1&key2%5B%5D=1&key2%5B%5D=2")!
         }
     }
-    
+
     func testURLEncodedParams() throws {
         for method in bodyMethods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
@@ -35,7 +35,7 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/x-www-form-urlencoded"
         }
     }
-    
+
     func testJSONParams() throws {
         for method in bodyMethods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
@@ -52,14 +52,14 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/json"
         }
     }
-    
+
     func testMultipartFormParams() throws {
         let form = ["question": "The Ultimate Question of Life, the Universe, and Everything", "answer": "42"]
         let expected = String(data: try Data(
             contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
                 .appendingPathComponent("multipart-simple").appendingPathExtension("txt")
             ), encoding: .utf8)!
-        
+
         for method in bodyMethods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
                 .setParams(.multipart(form, [:]))
@@ -73,7 +73,7 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
         }
     }
-    
+
     func testMultipartFilesParams() throws {
         let data = try Data(
             contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
@@ -85,7 +85,7 @@ class ParamsSpec: XCTestCase {
             contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
                 .appendingPathComponent("multipart-file").appendingPathExtension("txt")
             ), encoding: .utf8)!
-        
+
         for method in bodyMethods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
                 .setParams(.multipart([:], ["upload": file]))
@@ -101,7 +101,7 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
         }
     }
-    
+
     func testMultipartMixedParams() throws {
         let form = ["question": "The Ultimate Question of Life, the Universe, and Everything"]
         let data = try Data(
@@ -114,7 +114,7 @@ class ParamsSpec: XCTestCase {
             contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
                 .appendingPathComponent("multipart-mixed").appendingPathExtension("txt")
             ), encoding: .utf8)!
-        
+
         for method in bodyMethods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
                 .setParams(.multipart(form, ["upload": file]))
@@ -129,10 +129,10 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "multipart/form-data; boundary=__X_GNOMON_BOUNDARY__"
         }
     }
-    
+
     func testCustomDataParams() throws {
         let data = "custom data".data(using: .utf8)!
-        
+
         for method in bodyMethods {
             let request = try Request<String>(URLString: "https://example.com").setMethod(method)
                 .setParams(.data(data, contentType: "application/octet-stream"))
@@ -146,5 +146,5 @@ class ParamsSpec: XCTestCase {
             expect(urlRequest.allHTTPHeaderFields!["Content-Type"]) == "application/octet-stream"
         }
     }
-    
+
 }

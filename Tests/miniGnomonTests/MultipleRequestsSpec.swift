@@ -37,7 +37,7 @@ class MultipleRequestsSpec: XCTestCase {
         expect(try results[0].get().result.key) == 123
         expect(try results[1].get().result.key) == 234
     }
-    
+
     func testMultipleOneFail() throws {
         let client = HTTPClient { request, _, _ in
             let value = Int(request.url!.path.dropFirst())!
@@ -69,7 +69,7 @@ class MultipleRequestsSpec: XCTestCase {
 
         expect(try results[1].get().result.key) == 234
     }
-    
+
     func testMultipleOptional() throws {
         let client = HTTPClient { request, _, _ in
             let value = Int(request.url!.path.dropFirst())!
@@ -203,5 +203,5 @@ class MultipleRequestsSpec: XCTestCase {
         expect(cachedThenFetch).to(haveCount(1))
         expect(cachedThenFetch[0]).to(haveCount(0))
     }
-    
+
 }

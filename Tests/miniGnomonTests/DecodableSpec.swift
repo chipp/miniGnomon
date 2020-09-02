@@ -11,7 +11,7 @@ class DecodableSpec: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
     }
-    
+
     func testTeam() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -41,7 +41,7 @@ class DecodableSpec: XCTestCase {
         expect(team.players[1].firstName) == "Petya"
         expect(team.players[1].lastName) == "Ronaldo"
     }
-    
+
     func testPlayers() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -67,7 +67,7 @@ class DecodableSpec: XCTestCase {
         expect(players[0]) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
         expect(players[1]) == PlayerModel(firstName: "Petya", lastName: "Ronaldo")
     }
-    
+
     func testOptionalPlayers() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [
@@ -93,7 +93,7 @@ class DecodableSpec: XCTestCase {
         expect(players[0]) == PlayerModel(firstName: "Vasya", lastName: "Pupkin")
         expect(players[1]).to(beNil())
     }
-    
+
     func testMatchWithCustomizedDecoder() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: [

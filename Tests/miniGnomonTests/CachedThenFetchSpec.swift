@@ -13,7 +13,7 @@ class CacheAndFetchSpec: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
     }
-    
+
     func testNoCachedValue() throws {
         let client = HTTPClient { _, policy, _ in
             if case .returnCacheDataDontLoad = policy {
@@ -32,7 +32,7 @@ class CacheAndFetchSpec: XCTestCase {
         expect(responses[0].result.key) == 123
         expect(responses[0].type) == .regular
     }
-    
+
     func testCachedValueStored() throws {
         let client = HTTPClient { _, _, _ in
             try! TestResponses.jsonResponse(result: ["key": 123], cached: true)
@@ -50,7 +50,7 @@ class CacheAndFetchSpec: XCTestCase {
         expect(responses[1].result.key) == 123
         expect(responses[1].type) == .httpCache
     }
-    
+
     func testOutdatedCachedValueStored() throws {
         let client = HTTPClient { _, policy, _ in
             if case .returnCacheDataDontLoad = policy {
@@ -72,5 +72,5 @@ class CacheAndFetchSpec: XCTestCase {
         expect(responses[1].result.key) == 123
         expect(responses[1].type) == .regular
     }
-    
+
 }
