@@ -8,7 +8,7 @@ import RxSwift
 public class HTTPClient {
     typealias PerformURLRequest = (
         URLRequest, URLRequest.CachePolicy, AuthenticationChallenge?
-    ) -> Observable<(Data, HTTPURLResponse)>
+    ) -> Observable<DataAndResponse>
 
     let performURLRequest: PerformURLRequest
 
@@ -23,7 +23,7 @@ public class HTTPClient {
     private static func performURLRequest(
         urlRequest: URLRequest, policy: URLRequest.CachePolicy,
         authenticationChallenge: AuthenticationChallenge?
-    ) -> Observable<(Data, HTTPURLResponse)> {
+    ) -> Observable<DataAndResponse> {
         let delegate = SessionDelegate()
         delegate.authenticationChallenge = authenticationChallenge
 
@@ -99,14 +99,14 @@ public class HTTPClient {
 
     private func observable<M>(
         for request: Request<M>, localCache: Bool
-    ) -> Observable<(Data, HTTPURLResponse)> {
+    ) -> Observable<DataAndResponse> {
         Observable.deferred {
             let policy = cachePolicy(for: request, localCache: localCache)
             let urlRequest = try prepareURLRequest(from: request, cachePolicy: policy)
 
             let result = self.performURLRequest(urlRequest, policy, request.authenticationChallenge)
 
-            return result.map { tuple -> (Data, HTTPURLResponse) in
+            return result.map { tuple -> DataAndResponse in
                 let (data, response) = tuple
 
                 guard (200..<400) ~= response.statusCode else {

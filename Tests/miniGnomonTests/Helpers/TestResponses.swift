@@ -15,7 +15,7 @@ enum TestResponses {
     
     static func jsonResponse(
         result: Any, statusCode: Int = 200, cached: Bool, delay: DispatchTimeInterval = .seconds(0)
-    ) throws -> Observable<(Data, HTTPURLResponse)> {
+    ) throws -> Observable<DataAndResponse> {
         let data = try JSONSerialization.data(withJSONObject: result)
         var response = self.response(statusCode: statusCode)
         
@@ -29,7 +29,7 @@ enum TestResponses {
     
     static func stringResponse(
         result: String, statusCode: Int = 200, cached: Bool
-    ) throws -> Observable<(Data, HTTPURLResponse)> {
+    ) throws -> Observable<DataAndResponse> {
         guard let data = result.data(using: .utf8) else {
             fatalError("can't create utf8 data from string \"\(result)\"")
         }
@@ -43,7 +43,7 @@ enum TestResponses {
         return Observable.just((data, response))
     }
     
-    static func noCacheResponse() -> Observable<(Data, HTTPURLResponse)> {
+    static func noCacheResponse() -> Observable<DataAndResponse> {
         return Observable.error(NSError(domain: NSURLErrorDomain, code: NSURLErrorResourceUnavailable))
     }
 }

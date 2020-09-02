@@ -5,6 +5,8 @@
 import Foundation
 import RxSwift
 
+typealias DataAndResponse = (data: Data, response: HTTPURLResponse)
+
 public enum HTTPClientError: Error {
     case undefined(message: String?)
     case nonHTTPResponse(response: URLResponse)

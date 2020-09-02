@@ -12,8 +12,8 @@ func configuration(with policy: URLRequest.CachePolicy) -> URLSessionConfigurati
 }
 
 final class SessionDelegate: NSObject, URLSessionDataDelegate {
-    fileprivate let subject = PublishSubject<(Data, HTTPURLResponse)>()
-    var result: Observable<(Data, HTTPURLResponse)> { return subject }
+    fileprivate let subject = PublishSubject<DataAndResponse>()
+    var result: Observable<DataAndResponse> { return subject }
 
     var authenticationChallenge: AuthenticationChallenge?
 
