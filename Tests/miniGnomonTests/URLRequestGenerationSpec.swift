@@ -8,6 +8,9 @@ import Nimble
 @testable import miniGnomon
 
 class URLRequestGenerationSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
     
     func testValidURL() throws {
         let request = try Request<String>(URLString: "https://example.com")

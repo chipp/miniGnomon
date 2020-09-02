@@ -11,6 +11,9 @@ import RxBlocking
 
 // swiftlint:disable:next type_body_length
 class CacheSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
 
     func testSingleNoCachedValue() throws {
         let client = HTTPClient { _, _, _ in TestResponses.noCacheResponse() }

@@ -8,6 +8,9 @@ import Nimble
 @testable import miniGnomon
 
 class DecodableSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
     
     func testTeam() throws {
         let client = HTTPClient { _, _, _ in

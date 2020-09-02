@@ -9,6 +9,9 @@ import RxBlocking
 @testable import miniGnomon
 
 class CertificateSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
     
     func testInvalidCertificate() throws {
         let client = HTTPClient()

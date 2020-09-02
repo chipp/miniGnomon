@@ -12,6 +12,9 @@ import RxBlocking
 // swiftlint:disable type_body_length
 
 class MultipleRequestsSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
 
     func testMultiple() throws {
         let client = HTTPClient { request, _, _ in

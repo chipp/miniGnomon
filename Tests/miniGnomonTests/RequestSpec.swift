@@ -10,6 +10,9 @@ import RxBlocking
 @testable import miniGnomon
 
 class RequestSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
 
     func testSingleRequest() throws {
         let client = HTTPClient { _, _, _ in

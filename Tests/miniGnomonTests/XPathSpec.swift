@@ -8,6 +8,9 @@ import Nimble
 @testable import miniGnomon
 
 class XPathSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
     
     static let testDictionary: [String: Any] = [
         "root": [

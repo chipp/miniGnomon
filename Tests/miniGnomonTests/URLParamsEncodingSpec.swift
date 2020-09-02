@@ -8,6 +8,9 @@ import Nimble
 @testable import miniGnomon
 
 class URLParamsEncodingSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
     
     func testEmptyParams() throws {
         let request = try Request<String>(URLString: "https://example.com/post")

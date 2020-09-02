@@ -10,6 +10,9 @@ import RxBlocking
 @testable import miniGnomon
 
 class CacheAndFetchSpec: XCTestCase {
+    override func setUp() {
+        continueAfterFailure = false
+    }
     
     func testNoCachedValue() throws {
         let client = HTTPClient { _, policy, _ in
