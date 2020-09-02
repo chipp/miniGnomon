@@ -6,6 +6,8 @@ import Foundation
 import RxSwift
 
 public class HTTPClient {
+    // MARK: - Initialization
+
     typealias PerformURLRequest = (
         URLRequest, URLRequest.CachePolicy, AuthenticationChallenge?
     ) -> Observable<DataAndResponse>
@@ -39,11 +41,12 @@ public class HTTPClient {
         })
     }
 
+    // MARK: - Single request
+
     public func models<M>(for request: Request<M>) -> Observable<Response<M>> {
         observable(for: request, localCache: false).flatMap { data, response -> Observable<Response<M>> in
             let type: ResponseType = response.resultFromHTTPCache && !request.disableHttpCache ? .httpCache : .regular
-            return self.parse(data: data, response: response, responseType: type, for: request)
-                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
+            return Self.parse(data: data, response: response, responseType: type, for: request)
         }
     }
 
@@ -51,23 +54,18 @@ public class HTTPClient {
         cachedModels(for: request, catchErrors: true)
     }
 
-    private func cachedModels<M>(for request: Request<M>, catchErrors: Bool) -> Observable<Response<M>> {
-        let result = observable(for: request, localCache: true).flatMap { data, response in
-            self.parse(data: data, response: response, responseType: .localCache, for: request)
-                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
-        }
-
-        if catchErrors {
-            return result.catchError { _ in
-                Observable<Response<M>>.empty()
-            }
-        } else {
-            return result
-        }
-    }
-
     public func cachedThenFetch<M>(_ request: Request<M>) -> Observable<Response<M>> {
         cachedModels(for: request).concat(models(for: request))
+    }
+
+    // MARK: - Multiple requests
+
+    public func models<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
+        guard !requests.isEmpty else { return .just([]) }
+
+        return Observable.combineLatest(requests.map { request in
+            models(for: request).asResult()
+        })
     }
 
     public func cachedModels<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
@@ -75,14 +73,6 @@ public class HTTPClient {
 
         return Observable.combineLatest(requests.map { request in
             cachedModels(for: request, catchErrors: false).asResult()
-        })
-    }
-
-    public func models<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
-        guard !requests.isEmpty else { return .just([]) }
-
-        return Observable.combineLatest(requests.map { request in
-            models(for: request).asResult()
         })
     }
 
@@ -95,6 +85,22 @@ public class HTTPClient {
         return Observable.zip(cached).filter { results in
             results.filter { $0.value != nil }.count == requests.count
         }.concat(Observable.zip(http))
+    }
+
+    // MARK: - Private
+
+    private func cachedModels<M>(for request: Request<M>, catchErrors: Bool) -> Observable<Response<M>> {
+        let result = observable(for: request, localCache: true).flatMap { data, response in
+            Self.parse(data: data, response: response, responseType: .localCache, for: request)
+        }
+
+        if catchErrors {
+            return result.catchError { _ in
+                Observable<Response<M>>.empty()
+            }
+        } else {
+            return result
+        }
     }
 
     private func observable<M>(
@@ -118,7 +124,7 @@ public class HTTPClient {
         }
     }
 
-    private func parse<M>(
+    private static func parse<M>(
         data: Data, response httpResponse: HTTPURLResponse, responseType: ResponseType, for request: Request<M>
     ) -> Observable<Response<M>> {
         Observable.create { subscriber -> Disposable in
@@ -148,7 +154,7 @@ public class HTTPClient {
             subscriber.onCompleted()
 
             return Disposables.create()
-        }
+        }.subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
     }
 
     // MARK: - Logging
