@@ -56,8 +56,9 @@ class ParamsSpec: XCTestCase {
     func testMultipartFormParams() throws {
         let form = ["question": "The Ultimate Question of Life, the Universe, and Everything", "answer": "42"]
         let expected = String(data: try Data(
-            contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
-                .appendingPathComponent("multipart-simple").appendingPathExtension("txt")
+            contentsOf: URL(fileURLWithPath: #file)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("Fixtures").appendingPathComponent("multipart-simple").appendingPathExtension("txt")
             ), encoding: .utf8)!
 
         for method in bodyMethods {
@@ -76,14 +77,16 @@ class ParamsSpec: XCTestCase {
 
     func testMultipartFilesParams() throws {
         let data = try Data(
-            contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
-                .appendingPathComponent("lorem-ipsum").appendingPathExtension("txt")
+            contentsOf: URL(fileURLWithPath: #file)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("Fixtures").appendingPathComponent("lorem-ipsum").appendingPathExtension("txt")
         )
         let file = MultipartFile(data: data, contentType: "text/plain", filename: "lorem-ipsum.txt")
 
         let expected = String(data: try Data(
-            contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
-                .appendingPathComponent("multipart-file").appendingPathExtension("txt")
+            contentsOf: URL(fileURLWithPath: #file)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("Fixtures").appendingPathComponent("multipart-file").appendingPathExtension("txt")
             ), encoding: .utf8)!
 
         for method in bodyMethods {
@@ -105,14 +108,16 @@ class ParamsSpec: XCTestCase {
     func testMultipartMixedParams() throws {
         let form = ["question": "The Ultimate Question of Life, the Universe, and Everything"]
         let data = try Data(
-            contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
-                .appendingPathComponent("lorem-ipsum").appendingPathExtension("txt")
+            contentsOf: URL(fileURLWithPath: #file)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("Fixtures").appendingPathComponent("lorem-ipsum").appendingPathExtension("txt")
         )
         let file = MultipartFile(data: data, contentType: "text/plain", filename: "lorem-ipsum.txt")
 
         let expected = String(data: try Data(
-            contentsOf: URL(fileURLWithPath: #file).deletingLastPathComponent().appendingPathComponent("Fixtures")
-                .appendingPathComponent("multipart-mixed").appendingPathExtension("txt")
+            contentsOf: URL(fileURLWithPath: #file)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("Fixtures").appendingPathComponent("multipart-mixed").appendingPathExtension("txt")
             ), encoding: .utf8)!
 
         for method in bodyMethods {
