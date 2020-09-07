@@ -5,6 +5,12 @@ import PackageDescription
 
 let package = Package(
     name: "miniGnomon",
+    platforms: [
+        .macOS(.v10_15),
+        .iOS(.v13),
+        .tvOS(.v13),
+        .watchOS(.v6)
+    ],
     products: [
         .library(name: "miniGnomon", targets: ["miniGnomon"])
     ],
@@ -16,10 +22,17 @@ let package = Package(
         .target(name: "miniGnomon", dependencies: [
             .product(name: "RxSwift", package: "RxSwift"),
             .product(name: "RxRelay", package: "RxSwift"),
+            "CombineExtensions"
         ]),
         .testTarget(name: "miniGnomonTests", dependencies: [
-            "miniGnomon", "Nimble",
+            "miniGnomon", "Nimble", "BlockingSubscriber",
             .product(name: "RxBlocking", package: "RxSwift")
-        ])
+        ]),
+
+        .target(name: "BlockingSubscriber"),
+        .target(name: "CombineExtensions"),
+        .testTarget(name: "CombineExtensionsTests", dependencies: [
+            "CombineExtensions", "Nimble"
+        ]),
     ]
 )
