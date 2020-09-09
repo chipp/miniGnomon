@@ -28,7 +28,7 @@ class DecodableSpec: XCTestCase {
         }
 
         let request = try Request<TeamModel>(URLString: "https://example.com/")
-        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -55,7 +55,7 @@ class DecodableSpec: XCTestCase {
         }
 
         let request = try Request<[PlayerModel]>(URLString: "https://example.com")
-        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -81,7 +81,7 @@ class DecodableSpec: XCTestCase {
         }
 
         let request = try Request<[PlayerModel?]>(URLString: "https://example.com")
-        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -108,7 +108,7 @@ class DecodableSpec: XCTestCase {
         }
 
         let request = try Request<MatchModel>(URLString: "https://example.com")
-        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -145,7 +145,7 @@ class DecodableSpec: XCTestCase {
         }
 
         let request = try Request<[MatchModel]>(URLString: "https://example.com")
-        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -175,7 +175,7 @@ class DecodableSpec: XCTestCase {
         }
 
         let request = try Request<PlayerModel>(URLString: "https://example.com/").setXPath("json/data")
-        let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -204,7 +204,7 @@ class DecodableSpec: XCTestCase {
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("teams[0]/players[0]")
-            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+            let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
             let responses = try result.elements()
             expect(responses).to(haveCount(1))
@@ -217,7 +217,7 @@ class DecodableSpec: XCTestCase {
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("teams[0]/players[1]")
-            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+            let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
             let responses = try result.elements()
             expect(responses).to(haveCount(1))
@@ -252,7 +252,7 @@ class DecodableSpec: XCTestCase {
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("matches[0]/lineups[0][0]")
-            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+            let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
             let responses = try result.elements()
             expect(responses).to(haveCount(1))
@@ -262,7 +262,7 @@ class DecodableSpec: XCTestCase {
         do {
             let request = try Request<PlayerModel>(URLString: "https://example.com/")
                 .setXPath("matches[0]/lineups[1][1]")
-            let result = client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+            let result = try client.models(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
             let responses = try result.elements()
             expect(responses).to(haveCount(1))
