@@ -201,9 +201,9 @@ class MultipleRequestsSpec: XCTestCase {
         expect(try client.models(for: optionalRequests).toBlocking(timeout: BlockingTimeout).first()).to(haveCount(0))
         expect(try client.models(for: requests).toBlocking(timeout: BlockingTimeout).first()).to(haveCount(0))
 
-//        let cachedThenFetch = try client.cachedThenFetch(optionalRequests).toBlocking(timeout: BlockingTimeout).toArray()
-//        expect(cachedThenFetch).to(haveCount(1))
-//        expect(cachedThenFetch[0]).to(haveCount(0))
+        let cachedThenFetch = try client.cachedThenFetch(optionalRequests).toBlocking(timeout: BlockingTimeout).toArray()
+        expect(cachedThenFetch).to(haveCount(1))
+        expect(cachedThenFetch[0]).to(haveCount(0))
     }
 
 }

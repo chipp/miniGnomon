@@ -83,16 +83,18 @@ public class HTTPClient {
         }).eraseToAnyPublisher()
     }
 
-//    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> AnyPublisher<[Result<Response<M>, Error>], Error> {
-//        guard !requests.isEmpty else { return .just([]) }
-//
-//        let cached = requests.map { cachedModels(for: $0, catchErrors: true).asResult() }
-//        let http = requests.map { models(for: $0).asResult() }
-//
-//        return Observable.zip(cached).filter { results in
-//            results.filter { $0.value != nil }.count == requests.count
-//        }.concat(Observable.zip(http))
-//    }
+    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> AnyPublisher<[Result<Response<M>, Error>], Never> {
+        guard !requests.isEmpty else {
+            return Just([]).eraseToAnyPublisher()
+        }
+
+        let cached = requests.map { cachedModels(for: $0, catchErrors: true).asResult() }
+        let http = requests.map { models(for: $0).asResult() }
+
+        return CombineLatestMany(cached).filter { results in
+            results.filter { $0.value != nil }.count == requests.count
+        }.append(CombineLatestMany(http)).eraseToAnyPublisher()
+    }
 
     // MARK: - Private
 
@@ -133,9 +135,8 @@ public class HTTPClient {
                 }
 
                 return tuple
-            }.eraseToAnyPublisher()
-            // TODO:
-//            .share(replay: 1, scope: .whileConnected)
+            }
+            .eraseToAnyPublisher()
         }.eraseToAnyPublisher()
     }
 
