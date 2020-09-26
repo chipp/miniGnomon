@@ -3,14 +3,15 @@
 //
 
 import Foundation
-import RxSwift
+import Combine
+import CombineExtensions
 
 public class HTTPClient {
     // MARK: - Initialization
 
     typealias PerformURLRequest = (
         URLRequest, URLRequest.CachePolicy, AuthenticationChallenge?
-    ) -> Observable<DataAndResponse>
+    ) -> AnyPublisher<DataAndResponse, Error>
 
     let performURLRequest: PerformURLRequest
 
@@ -25,7 +26,7 @@ public class HTTPClient {
     private static func performURLRequest(
         urlRequest: URLRequest, policy: URLRequest.CachePolicy,
         authenticationChallenge: AuthenticationChallenge?
-    ) -> Observable<DataAndResponse> {
+    ) -> AnyPublisher<DataAndResponse, Error> {
         let delegate = SessionDelegate()
         delegate.authenticationChallenge = authenticationChallenge
 
@@ -34,85 +35,99 @@ public class HTTPClient {
         task.resume()
         session.finishTasksAndInvalidate()
 
-        return delegate.result.do(onDispose: {
-            if task.state == .running {
-                task.cancel()
-            }
-        })
+        return delegate.result
+            .handleEvents(receiveCancel: {
+                if task.state == .running {
+                    task.cancel()
+                }
+            })
+            .eraseToAnyPublisher()
     }
 
     // MARK: - Single request
 
-    public func models<M>(for request: Request<M>) -> Observable<Response<M>> {
-        observable(for: request, localCache: false).flatMap { data, response -> Observable<Response<M>> in
+    public func models<M>(for request: Request<M>) -> AnyPublisher<Response<M>, Error> {
+        observable(for: request, localCache: false).flatMap { data, response -> AnyPublisher<Response<M>, Error> in
             let type: ResponseType = response.resultFromHTTPCache && !request.disableHttpCache ? .httpCache : .regular
             return Self.parse(data: data, response: response, responseType: type, for: request)
-        }
+        }.eraseToAnyPublisher()
     }
 
-    public func cachedModels<M>(for request: Request<M>) -> Observable<Response<M>> {
+    public func cachedModels<M>(for request: Request<M>) -> AnyPublisher<Response<M>, Error> {
         cachedModels(for: request, catchErrors: true)
     }
 
-    public func cachedThenFetch<M>(_ request: Request<M>) -> Observable<Response<M>> {
-        cachedModels(for: request).concat(models(for: request))
+    public func cachedThenFetch<M>(_ request: Request<M>) -> AnyPublisher<Response<M>, Error> {
+        cachedModels(for: request).append(models(for: request)).eraseToAnyPublisher()
     }
 
     // MARK: - Multiple requests
 
-    public func models<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
-        guard !requests.isEmpty else { return .just([]) }
+    public func models<M>(for requests: [Request<M>]) -> AnyPublisher<[Result<Response<M>, Error>], Never> {
+        guard !requests.isEmpty else {
+            return Just([]).eraseToAnyPublisher()
+        }
 
-        return Observable.combineLatest(requests.map { request in
+        return CombineLatestMany(requests.map { request in
             models(for: request).asResult()
-        })
+        }).eraseToAnyPublisher()
     }
 
-    public func cachedModels<M>(for requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
-        guard !requests.isEmpty else { return .just([]) }
+    public func cachedModels<M>(for requests: [Request<M>]) -> AnyPublisher<[Result<Response<M>, Error>], Never> {
+        guard !requests.isEmpty else {
+            return Just([]).eraseToAnyPublisher()
+        }
 
-        return Observable.combineLatest(requests.map { request in
+        return CombineLatestMany(requests.map { request in
             cachedModels(for: request, catchErrors: false).asResult()
-        })
+        }).eraseToAnyPublisher()
     }
 
-    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> Observable<[Result<Response<M>, Error>]> {
-        guard !requests.isEmpty else { return .just([]) }
+    public func cachedThenFetch<M>(_ requests: [Request<M>]) -> AnyPublisher<[Result<Response<M>, Error>], Never> {
+        guard !requests.isEmpty else {
+            return Just([]).eraseToAnyPublisher()
+        }
 
         let cached = requests.map { cachedModels(for: $0, catchErrors: true).asResult() }
         let http = requests.map { models(for: $0).asResult() }
 
-        return Observable.zip(cached).filter { results in
+        return CombineLatestMany(cached).filter { results in
             results.filter { $0.value != nil }.count == requests.count
-        }.concat(Observable.zip(http))
+        }.append(CombineLatestMany(http)).eraseToAnyPublisher()
     }
 
     // MARK: - Private
 
-    private func cachedModels<M>(for request: Request<M>, catchErrors: Bool) -> Observable<Response<M>> {
+    private func cachedModels<M>(for request: Request<M>, catchErrors: Bool) -> AnyPublisher<Response<M>, Error> {
         let result = observable(for: request, localCache: true).flatMap { data, response in
             Self.parse(data: data, response: response, responseType: .localCache, for: request)
         }
 
         if catchErrors {
-            return result.catchError { _ in
-                Observable<Response<M>>.empty()
-            }
+            return result.catch { _ in
+                Empty(outputType: Response<M>.self, failureType: Error.self)
+            }.eraseToAnyPublisher()
         } else {
-            return result
+            return result.eraseToAnyPublisher()
         }
     }
 
     private func observable<M>(
         for request: Request<M>, localCache: Bool
-    ) -> Observable<DataAndResponse> {
-        Observable.deferred {
+    ) -> AnyPublisher<DataAndResponse, Error> {
+        Deferred<AnyPublisher<DataAndResponse, Error>> {
             let policy = cachePolicy(for: request, localCache: localCache)
-            let urlRequest = try prepareURLRequest(from: request, cachePolicy: policy)
+            let urlRequest: URLRequest
+            do {
+                urlRequest = try prepareURLRequest(from: request, cachePolicy: policy)
+            } catch {
+                return Fail(outputType: DataAndResponse.self, failure: error)
+                    .eraseToAnyPublisher()
+            }
 
             let result = self.performURLRequest(urlRequest, policy, request.authenticationChallenge)
 
-            return result.map { tuple -> DataAndResponse in
+            return result.tryMap { tuple -> DataAndResponse in
                 let (data, response) = tuple
 
                 guard (200..<400) ~= response.statusCode else {
@@ -120,22 +135,23 @@ public class HTTPClient {
                 }
 
                 return tuple
-            }.share(replay: 1, scope: .whileConnected)
-        }
+            }
+            .eraseToAnyPublisher()
+        }.eraseToAnyPublisher()
     }
 
     private static func parse<M>(
         data: Data, response httpResponse: HTTPURLResponse, responseType: ResponseType, for request: Request<M>
-    ) -> Observable<Response<M>> {
-        Observable.create { subscriber -> Disposable in
+    ) -> AnyPublisher<Response<M>, Error> {
+        Future { completion in
             let result: M
             do {
                 let container = try M.dataContainer(with: data, at: request.xpath)
                 result = try M(container)
             }
             catch {
-                subscriber.onError(error)
-                return Disposables.create()
+                completion(.failure(error))
+                return
             }
 
             let headers: [String: String]
@@ -150,11 +166,10 @@ public class HTTPClient {
                 result: result, type: responseType, headers: headers, statusCode: httpResponse.statusCode
             )
             request.response?(response)
-            subscriber.onNext(response)
-            subscriber.onCompleted()
-
-            return Disposables.create()
-        }.subscribeOn(ConcurrentDispatchQueueScheduler(qos: request.dispatchQoS))
+            completion(.success(response))
+        }
+        .subscribe(on: DispatchQueue.global(qos: request.dispatchQoS.qosClass))
+        .eraseToAnyPublisher()
     }
 
     // MARK: - Logging

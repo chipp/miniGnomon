@@ -4,8 +4,8 @@
 
 import XCTest
 import Nimble
-import RxSwift
-import RxBlocking
+import Combine
+import BlockingSubscriber
 
 @testable import miniGnomon
 
@@ -19,7 +19,7 @@ class CacheSpec: XCTestCase {
         let client = HTTPClient { _, _, _ in TestResponses.noCacheResponse() }
 
         let request = try Request<TestModel>(URLString: "https://example.com/")
-        let result = client.cachedModels(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedModels(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         expect(try result.elements()).to(haveCount(0))
     }
@@ -29,7 +29,7 @@ class CacheSpec: XCTestCase {
         let client = HTTPClient { _, _, _ in response }
 
         let request = try Request<TestModel>(URLString: "https://example.com/")
-        let result = client.cachedModels(for: request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedModels(for: request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -45,7 +45,7 @@ class CacheSpec: XCTestCase {
             try Request<TestModel>(URLString: "https://example.com")
         }
 
-        let result = client.cachedModels(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedModels(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
 
         let elements = try result.elements()
         expect(elements).to(haveCount(1))
@@ -79,7 +79,7 @@ class CacheSpec: XCTestCase {
             try Request<TestModel>(URLString: "https://example.com/\(value)")
         }
 
-        let result = client.cachedModels(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedModels(for: requests).toBlocking(timeout: BlockingTimeout).materialize()
 
         let elements = try result.elements()
         expect(elements).to(haveCount(1))

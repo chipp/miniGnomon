@@ -15,18 +15,12 @@ let package = Package(
         .library(name: "miniGnomon", targets: ["miniGnomon"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ReactiveX/RxSwift", .upToNextMajor(from: "5.1.1")),
         .package(url: "https://github.com/Quick/Nimble", .upToNextMajor(from: "8.0.0"))
     ],
     targets: [
-        .target(name: "miniGnomon", dependencies: [
-            .product(name: "RxSwift", package: "RxSwift"),
-            .product(name: "RxRelay", package: "RxSwift"),
-            "CombineExtensions"
-        ]),
+        .target(name: "miniGnomon", dependencies: ["CombineExtensions"]),
         .testTarget(name: "miniGnomonTests", dependencies: [
-            "miniGnomon", "Nimble", "BlockingSubscriber",
-            .product(name: "RxBlocking", package: "RxSwift")
+            "miniGnomon", "Nimble", "BlockingSubscriber"
         ]),
 
         .target(name: "BlockingSubscriber"),

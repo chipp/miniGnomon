@@ -4,8 +4,8 @@
 
 import XCTest
 import Nimble
-import RxSwift
-import RxBlocking
+import Combine
+import BlockingSubscriber
 
 @testable import miniGnomon
 
@@ -24,7 +24,7 @@ class CacheAndFetchSpec: XCTestCase {
         }
 
         let request = try Request<TestModel>(URLString: "https://example.com/")
-        let result = client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(1))
@@ -39,7 +39,7 @@ class CacheAndFetchSpec: XCTestCase {
         }
 
         let request = try Request<TestModel>(URLString: "https://example.com/")
-        let result = client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(2))
@@ -61,7 +61,7 @@ class CacheAndFetchSpec: XCTestCase {
         }
 
         let request = try Request<TestModel>(URLString: "https://example.com/")
-        let result = client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
+        let result = try client.cachedThenFetch(request).toBlocking(timeout: BlockingTimeout).materialize()
 
         let responses = try result.elements()
         expect(responses).to(haveCount(2))

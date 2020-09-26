@@ -3,7 +3,6 @@
 //
 
 import Foundation
-import RxSwift
 
 public typealias AuthenticationChallenge = (
     URLAuthenticationChallenge, (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
